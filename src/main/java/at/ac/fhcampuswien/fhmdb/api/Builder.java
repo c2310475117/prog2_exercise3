@@ -55,7 +55,7 @@ public class Builder {
         }
 
         private void appendDelimiter() {
-            int length = urlBuilder.length();
+
             if (urlBuilder.indexOf("?") == -1) {
                 urlBuilder.append("?");
                 // https://prog2.fh-campuswien.ac.at/movies?query=userinput&genre=ACTION
