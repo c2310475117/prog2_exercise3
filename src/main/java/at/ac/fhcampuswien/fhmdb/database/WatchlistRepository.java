@@ -5,6 +5,7 @@ import at.ac.fhcampuswien.fhmdb.observ.Observable;
 import at.ac.fhcampuswien.fhmdb.observ.Observer;
 import com.j256.ormlite.dao.Dao;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,22 +42,17 @@ public class WatchlistRepository implements Observable {
         }
     }
 
-    public synchronized int addToWatchlist(WatchlistMovieEntity movieEntity) throws DataBaseException {
+    public int addToWatchlist(WatchlistMovieEntity movie) throws DataBaseException {
         try {
-            long count = watchlistDao.queryBuilder().where().eq("apiId", movieEntity.getApiId()).countOf();
-            if (count == 0) {
-                int result = watchlistDao.create(movieEntity);
-                MovieEntity fullMovieEntity = movieDao.queryBuilder().where().eq("apiId", movieEntity.getApiId()).queryForFirst();
-                if (fullMovieEntity != null) {
-                    notifyObservers(MovieEntity.toMovies(List.of(fullMovieEntity)).get(0), true);
-                }
-                return result;
+            // Überprüfen, ob der Film bereits in der Watchlist vorhanden ist
+            List<WatchlistMovieEntity> watchlist = getWatchlist();
+            boolean movieExists = watchlist.stream().anyMatch(w -> w.getApiId().equals(movie.getApiId()));
+
+            if (!movieExists) {
+                // Film nur hinzufügen, wenn er noch nicht vorhanden ist
+                return watchlistDao.create(movie);
             } else {
-                MovieEntity fullMovieEntity = movieDao.queryBuilder().where().eq("apiId", movieEntity.getApiId()).queryForFirst();
-                if (fullMovieEntity != null) {
-                    notifyObservers(MovieEntity.toMovies(List.of(fullMovieEntity)).get(0), false);
-                }
-                return 0;
+                return 0; // Film bereits vorhanden
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -64,6 +60,14 @@ public class WatchlistRepository implements Observable {
         }
     }
 
+    public boolean isMovieInWatchlist(String apiId) throws DataBaseException {
+        try {
+            long count = watchlistDao.queryBuilder().where().eq("apiId", apiId).countOf();
+            return count > 0;
+        } catch (SQLException e) {
+            throw new DataBaseException("Error while checking if movie is in watchlist");
+        }
+    }
 
     public synchronized int removeFromWatchlist(String apiId) throws DataBaseException {
         try {

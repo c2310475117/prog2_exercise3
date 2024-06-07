@@ -54,10 +54,12 @@ public class WatchlistCell extends ListCell<MovieEntity> {
                 detailBtn.setText("Show Details");
             }
             setGraphic(layout);
+            layout.layout();
         });
 
         removeBtn.setOnMouseClicked(mouseEvent -> {
             removeFromWatchlistClick.onClick(getItem());
+            layout.layout();
         });
     }
 

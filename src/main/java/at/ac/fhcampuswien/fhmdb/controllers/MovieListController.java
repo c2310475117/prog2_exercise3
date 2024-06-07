@@ -76,28 +76,29 @@ public class MovieListController implements Initializable, Observer {
                 isAddingToWatchlist = true;
 
                 try {
-                    long count = watchlistDao.queryBuilder().where().eq("apiId", movie.getId()).countOf();
-                    if (count == 0) {
-                        WatchlistMovieEntity watchlistMovieEntity = new WatchlistMovieEntity(movie.getId());
-                        System.out.println("Film wird zur Watchlist hinzugefügt: " + movie.getId());
+                    String apiId = movie.getId();
+                    // Überprüfen, ob der Film bereits in der Watchlist vorhanden ist
+                    List<WatchlistMovieEntity> watchlist = watchlistRepository.getWatchlist();
+                    boolean movieExists = watchlist.stream().anyMatch(w -> w.getApiId().equals(apiId));
+
+                    if (!movieExists) {
+                        // Film nur hinzufügen, wenn er noch nicht in der Watchlist ist
+                        WatchlistMovieEntity watchlistMovieEntity = new WatchlistMovieEntity(apiId);
                         watchlistRepository.addToWatchlist(watchlistMovieEntity);
                         watchlistRepository.notifyObservers(movie, true);
                     } else {
-                        System.out.println("Film ist bereits in der Watchlist: " + movie.getId());
+                        System.out.println("Film ist bereits in der Watchlist: " + apiId);
                     }
                 } catch (DataBaseException e) {
                     UserDialog dialog = new UserDialog("Database Error", e.getMessage());
                     dialog.show();
                     e.printStackTrace();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
                 } finally {
                     isAddingToWatchlist = false;
                 }
             }
         }
     };
-
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         FXMLLoader loader = new FXMLLoader(MovieListController.class.getResource("movie-list.fxml"));
