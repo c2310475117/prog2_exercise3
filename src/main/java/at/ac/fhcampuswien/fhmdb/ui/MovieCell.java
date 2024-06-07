@@ -60,6 +60,7 @@ public class MovieCell extends ListCell<Movie> {
             setGraphic(layout);
         });
 
+        watchlistBtn.setOnMouseClicked(null); // Entfernen Sie alle vorherigen EventHandlers
         watchlistBtn.setOnMouseClicked(mouseEvent -> {
             addToWatchlistClicked.onClick(getItem());
         });
@@ -90,6 +91,7 @@ public class MovieCell extends ListCell<Movie> {
         details.getChildren().add(mainCast);
         return details;
     }
+
     @Override
     protected void updateItem(Movie movie, boolean empty) {
         super.updateItem(movie, empty);
@@ -112,10 +114,17 @@ public class MovieCell extends ListCell<Movie> {
                     .collect(Collectors.joining(", "));
             genre.setText(genres);
 
-            detail.setMaxWidth(this.getScene().getWidth() - 30);
+            // Überprüfen Sie, ob die Szene nicht null ist, bevor Sie getWidth() aufrufen
+            if (this.getScene() != null) {
+                detail.setMaxWidth(this.getScene().getWidth() - 30);
+            } else {
+                // Standardbreite setzen oder eine andere Logik implementieren
+                detail.setMaxWidth(300); // Beispielwert
+            }
 
             setGraphic(layout);
         }
     }
+
 }
 

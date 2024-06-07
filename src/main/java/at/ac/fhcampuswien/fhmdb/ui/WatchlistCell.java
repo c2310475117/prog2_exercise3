@@ -79,6 +79,7 @@ public class WatchlistCell extends ListCell<MovieEntity> {
 
         return details;
     }
+
     @Override
     protected void updateItem(MovieEntity movieEntity, boolean empty) {
         super.updateItem(movieEntity, empty);
@@ -96,7 +97,13 @@ public class WatchlistCell extends ListCell<MovieEntity> {
                             : "No description available"
             );
 
-            description.setMaxWidth(this.getScene().getWidth() - 30);
+            // Überprüfen Sie, ob die Szene nicht null ist, bevor Sie getWidth() aufrufen
+            if (this.getScene() != null) {
+                description.setMaxWidth(this.getScene().getWidth() - 30);
+            } else {
+                // Standardbreite setzen oder eine andere Logik implementieren
+                description.setMaxWidth(300); // Beispielwert
+            }
 
             String genres = movieEntity.getGenres()
                     .stream()
@@ -107,5 +114,6 @@ public class WatchlistCell extends ListCell<MovieEntity> {
             setGraphic(layout);
         }
     }
+
 }
 

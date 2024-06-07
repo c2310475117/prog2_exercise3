@@ -2,6 +2,7 @@ package at.ac.fhcampuswien.fhmdb.controllers;
 
 import at.ac.fhcampuswien.fhmdb.enums.UIComponent;
 import at.ac.fhcampuswien.fhmdb.models.Movie;
+import at.ac.fhcampuswien.fhmdb.observ.Observer;
 import com.jfoenix.controls.*;
 import com.jfoenix.transitions.hamburger.HamburgerBasicCloseTransition;
 import javafx.animation.TranslateTransition;
@@ -10,12 +11,13 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.util.Duration;
+import at.ac.fhcampuswien.fhmdb.ui.UserDialog;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class MainController {
+public class MainController implements Observer {
     @FXML
     public JFXHamburger hamburgerMenu;
 
@@ -64,8 +66,9 @@ public class MainController {
         }
     }
 
-    public void setContent(String fxmlPath){
+    private void setContent(String fxmlPath){
         FXMLLoader loader = new FXMLLoader(MainController.class.getResource(fxmlPath));
+        loader.setControllerFactory(new ControllerFactory()); // Set the factory
         try {
             mainPane.setCenter(loader.load());
         } catch (Exception e) {
@@ -118,5 +121,17 @@ public class MainController {
     @FXML
     public void navigateToMovielist() {
         setContent(UIComponent.MOVIELIST.path);
+    }
+
+
+    @Override
+    public void update(Movie movie, boolean added) {
+        if (added) {
+            UserDialog dialog = new UserDialog("Info", "Movie " + movie.getTitle() + " was added to the watchlist");
+            dialog.show();
+        } else {
+            UserDialog dialog = new UserDialog("Info", "Movie " + movie.getTitle() + " was removed from the watchlist");
+            dialog.show();
+        }
     }
 }
