@@ -1,17 +1,11 @@
 package at.ac.fhcampuswien.fhmdb.controllers;
 
-import at.ac.fhcampuswien.fhmdb.controllers.MainController;
-import at.ac.fhcampuswien.fhmdb.controllers.MovieListController;
-import at.ac.fhcampuswien.fhmdb.controllers.WatchlistController;
-
 import javafx.util.Callback;
 
 public class ControllerFactory implements Callback<Class<?>, Object> {
-    // Singleton instances of controllers
     private static MainController mainControllerInstance;
     private static MovieListController movieListControllerInstance;
     private static WatchlistController watchlistControllerInstance;
-
 
     @Override
     public Object call(Class<?> controllerClass) {
@@ -25,14 +19,13 @@ public class ControllerFactory implements Callback<Class<?>, Object> {
                 movieListControllerInstance = new MovieListController();
             }
             return movieListControllerInstance;
-        }else if(controllerClass == WatchlistController.class) {
+        } else if (controllerClass == WatchlistController.class) {
             if (watchlistControllerInstance == null) {
-                watchlistControllerInstance = new WatchlistController();
+                watchlistControllerInstance = WatchlistController.getInstance();
             }
             return watchlistControllerInstance;
         }
         try {
-            // Default case: return a new instance
             return controllerClass.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             e.printStackTrace();

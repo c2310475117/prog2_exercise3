@@ -126,12 +126,7 @@ public class MainController implements Observer {
 
     @Override
     public void update(Movie movie, boolean added) {
-        if (added) {
-            UserDialog dialog = new UserDialog("Info", "Movie " + movie.getTitle() + " was added to the watchlist");
-            dialog.show();
-        } else {
-            UserDialog dialog = new UserDialog("Info", "Movie " + movie.getTitle() + " was removed from the watchlist");
-            dialog.show();
+
         }
-    }
+
 }

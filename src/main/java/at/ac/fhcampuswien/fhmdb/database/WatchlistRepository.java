@@ -42,6 +42,7 @@ public class WatchlistRepository implements Observable {
     }
 
     public synchronized int addToWatchlist(WatchlistMovieEntity movieEntity) throws DataBaseException {
+        System.out.println("addToWatchlist called with movie: " + movieEntity.getApiId()); // Add this line
         try {
             long count = watchlistDao.queryBuilder().where().eq("apiId", movieEntity.getApiId()).countOf();
             if (count == 0) {
@@ -83,7 +84,12 @@ public class WatchlistRepository implements Observable {
 
     @Override
     public void addObserver(Observer observer) {
-        observers.add(observer);
+        if (!observers.contains(observer)) {
+            observers.add(observer);
+        }
+    }
+        public List<Observer> getObservers() {
+        return new ArrayList<>(observers);
     }
 
     @Override
@@ -98,5 +104,6 @@ public class WatchlistRepository implements Observable {
             observer.update(movie, added);
         }
     }
+
     //--------------------------------------
 }
