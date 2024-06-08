@@ -69,30 +69,22 @@ public class MovieListController implements Initializable, Observer {
 
     Dao<WatchlistMovieEntity, Long> watchlistDao;
 
-
     private final ClickEventHandler onAddToWatchlistClicked = (clickedItem) -> {
         synchronized (this) {
-            System.out.println("EventHandler aufgerufen. isAddingToWatchlist: " + isAddingToWatchlist); // Logging hinzufügen
             if (!isAddingToWatchlist && clickedItem instanceof Movie movie) {
                 isAddingToWatchlist = true;
-                System.out.println("Beginne mit dem Hinzufügen zum Watchlist."); // Logging hinzufügen
-
                 try {
                     String apiId = movie.getId();
                     WatchlistMovieEntity watchlistMovieEntity = new WatchlistMovieEntity(apiId);
                     watchlistRepository.addToWatchlist(watchlistMovieEntity);
-                    // Keine Benachrichtigungen werden gesendet, unabhängig vom Ergebnis
                 } catch (DataBaseException e) {
                     e.printStackTrace();
                 } finally {
                     isAddingToWatchlist = false;
-                    System.out.println("Hinzufügen zum Watchlist abgeschlossen. isAddingToWatchlist zurückgesetzt."); // Logging hinzufügen
                 }
             }
         }
     };
-
-
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -104,7 +96,11 @@ public class MovieListController implements Initializable, Observer {
             watchlistRepository = WatchlistRepository.getInstance();
             watchlistDao = DatabaseManager.getInstance().getWatchlistDao();
 
-            watchlistRepository.addObserver(this);
+            // Ensure observer is only added once
+            if (!watchlistRepository.getObservers().contains(this)) {
+                watchlistRepository.addObserver(this);
+                System.out.println("Observer added in MovieListController");
+            }
 
         } catch (DataBaseException e) {
             throw new RuntimeException(e);
@@ -114,7 +110,6 @@ public class MovieListController implements Initializable, Observer {
         initializeLayout();
 
         currentState = new UnsortedState();
-
     }
 
     public void initializeState() {
@@ -271,6 +266,7 @@ public class MovieListController implements Initializable, Observer {
         } else {
             message = "Movie " + movie.getTitle() + (added ? " was added to" : " was removed from") + " the watchlist";
         }
+        System.out.println("UserDialog: " + message);
         UserDialog dialog = new UserDialog("Info", message);
         dialog.show();
     }

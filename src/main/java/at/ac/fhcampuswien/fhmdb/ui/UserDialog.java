@@ -17,6 +17,7 @@ public class UserDialog {
     }
 
     public void show() {
+        System.out.println("Showing UserDialog: " + dialog.getContentText());
         dialog.showAndWait();
     }
 }

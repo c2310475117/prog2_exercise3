@@ -1,10 +1,13 @@
 package at.ac.fhcampuswien.fhmdb.controllers;
 
 import at.ac.fhcampuswien.fhmdb.ClickEventHandler;
-import at.ac.fhcampuswien.fhmdb.database.*;
+import at.ac.fhcampuswien.fhmdb.database.DataBaseException;
+import at.ac.fhcampuswien.fhmdb.database.MovieEntity;
+import at.ac.fhcampuswien.fhmdb.database.MovieRepository;
+import at.ac.fhcampuswien.fhmdb.database.WatchlistMovieEntity;
+import at.ac.fhcampuswien.fhmdb.database.WatchlistRepository;
 import at.ac.fhcampuswien.fhmdb.models.Movie;
 import at.ac.fhcampuswien.fhmdb.observ.Observer;
-import at.ac.fhcampuswien.fhmdb.ui.UserDialog;
 import at.ac.fhcampuswien.fhmdb.ui.WatchlistCell;
 import com.jfoenix.controls.JFXListView;
 import javafx.collections.FXCollections;
@@ -30,12 +33,11 @@ public class WatchlistController implements Initializable, Observer {
         }
         return instance;
     }
+
     @FXML
     private JFXListView<MovieEntity> watchlistView;
 
     protected ObservableList<MovieEntity> observableWatchlist = FXCollections.observableArrayList();
-
-
 
     private final ClickEventHandler onRemoveFromWatchlistClicked = (o) -> {
         if (o instanceof MovieEntity) {
@@ -44,13 +46,7 @@ public class WatchlistController implements Initializable, Observer {
             try {
                 watchlistRepository.removeFromWatchlist(movieEntity.getApiId());
                 observableWatchlist.remove(movieEntity);
-
-                // Convert MovieEntity to Movie before notifying observers
-                // Movie movie = MovieEntity.toMovies(List.of(movieEntity)).get(0);
-                // watchlistRepository.notifyObservers(movie, false, true);
             } catch (DataBaseException e) {
-                // UserDialog dialog = new UserDialog("Database Error", "Could not remove movie from watchlist");
-                //dialog.show();
                 e.printStackTrace();
             }
         }
@@ -61,7 +57,12 @@ public class WatchlistController implements Initializable, Observer {
         try {
             movieRepository = MovieRepository.getInstance();
             watchlistRepository = WatchlistRepository.getInstance();
-            // watchlistRepository.addObserver(this);
+
+            // Ensure observer is only added once
+            if (!watchlistRepository.getObservers().contains(this)) {
+                watchlistRepository.addObserver(this);
+                System.out.println("Observer added in WatchlistController");
+            }
 
             List<WatchlistMovieEntity> watchlist = watchlistRepository.getWatchlist();
             List<MovieEntity> movies = new ArrayList<>();
@@ -78,8 +79,6 @@ public class WatchlistController implements Initializable, Observer {
             watchlistView.setCellFactory(movieListView -> new WatchlistCell(onRemoveFromWatchlistClicked));
 
         } catch (DataBaseException e) {
-            // UserDialog dialog = new UserDialog("Database Error", "Could not read movies from DB");
-            // dialog.show();
             e.printStackTrace();
         }
 
@@ -90,33 +89,9 @@ public class WatchlistController implements Initializable, Observer {
         System.out.println("WatchlistController initialized");
     }
 
-/*
     @Override
-    public void update(Movie movie, boolean added) {
-        try {
-            MovieEntity movieEntity = movieRepository.getMovie(movie.getId());
-
-            if (added) {
-                observableWatchlist.add(movieEntity);
-            } else {
-                observableWatchlist.removeIf(m -> m.getApiId().equals(movie.getId()));
-            }
-        } catch (DataBaseException e) {
-            UserDialog dialog = new UserDialog("Database Error", "Could not update watchlist");
-            dialog.show();
-            e.printStackTrace();
-        }
-    }
-*/
-    @Override
-    public void update (Movie movie, boolean added, boolean alreadyExist) {
-        String message;
-    if (alreadyExist) {
-        message = "Movie " + movie.getTitle() + " already exists in the watchlist";
-    } else {
-        message = "Movie " + movie.getTitle() + (added ? " was added to" : " was removed from") + " the watchlist";
-    }
-    UserDialog dialog = new UserDialog("Info", message);
-    dialog.show();
+    public void update(Movie movie, boolean added, boolean alreadyExist) {
+        // Do not show dialog in WatchlistController
+        System.out.println("WatchlistController update: Movie " + movie.getTitle() + (added ? " added to" : " removed from") + " the watchlist");
     }
 }
