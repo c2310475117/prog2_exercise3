@@ -26,7 +26,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.TextField;
 
 import java.net.URL;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -70,35 +69,31 @@ public class MovieListController implements Initializable, Observer {
 
     Dao<WatchlistMovieEntity, Long> watchlistDao;
 
+
     private final ClickEventHandler onAddToWatchlistClicked = (clickedItem) -> {
         synchronized (this) {
+            System.out.println("EventHandler aufgerufen. isAddingToWatchlist: " + isAddingToWatchlist); // Logging hinzufügen
             if (!isAddingToWatchlist && clickedItem instanceof Movie movie) {
                 isAddingToWatchlist = true;
+                System.out.println("Beginne mit dem Hinzufügen zum Watchlist."); // Logging hinzufügen
 
                 try {
                     String apiId = movie.getId();
-                    // Überprüfen, ob der Film bereits in der Watchlist vorhanden ist
-                    List<WatchlistMovieEntity> watchlist = watchlistRepository.getWatchlist();
-                    boolean movieExists = watchlist.stream().anyMatch(w -> w.getApiId().equals(apiId));
-
-                    if (!movieExists) {
-                        // Film nur hinzufügen, wenn er noch nicht in der Watchlist ist
-                        WatchlistMovieEntity watchlistMovieEntity = new WatchlistMovieEntity(apiId);
-                        watchlistRepository.addToWatchlist(watchlistMovieEntity);
-                        watchlistRepository.notifyObservers(movie, true);
-                    } else {
-                        System.out.println("Film ist bereits in der Watchlist: " + apiId);
-                    }
+                    WatchlistMovieEntity watchlistMovieEntity = new WatchlistMovieEntity(apiId);
+                    watchlistRepository.addToWatchlist(watchlistMovieEntity);
+                    // Keine Benachrichtigungen werden gesendet, unabhängig vom Ergebnis
                 } catch (DataBaseException e) {
-                    UserDialog dialog = new UserDialog("Database Error", e.getMessage());
-                    dialog.show();
                     e.printStackTrace();
                 } finally {
                     isAddingToWatchlist = false;
+                    System.out.println("Hinzufügen zum Watchlist abgeschlossen. isAddingToWatchlist zurückgesetzt."); // Logging hinzufügen
                 }
             }
         }
     };
+
+
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         FXMLLoader loader = new FXMLLoader(MovieListController.class.getResource("movie-list.fxml"));
@@ -109,6 +104,8 @@ public class MovieListController implements Initializable, Observer {
             watchlistRepository = WatchlistRepository.getInstance();
             watchlistDao = DatabaseManager.getInstance().getWatchlistDao();
 
+            watchlistRepository.addObserver(this);
+
         } catch (DataBaseException e) {
             throw new RuntimeException(e);
         }
@@ -117,8 +114,6 @@ public class MovieListController implements Initializable, Observer {
         initializeLayout();
 
         currentState = new UnsortedState();
-
-        watchlistRepository.addObserver(this);
 
     }
 
@@ -269,8 +264,13 @@ public class MovieListController implements Initializable, Observer {
     }
 
     @Override
-    public void update(Movie movie, boolean added) {
-        String message = "Movie " + movie.getTitle() + (added ? " was added to" : " was removed from") + " the watchlist";
+    public void update(Movie movie, boolean added, boolean alreadyExist) {
+        String message;
+        if (alreadyExist) {
+            message = "Movie " + movie.getTitle() + " already exists in the watchlist";
+        } else {
+            message = "Movie " + movie.getTitle() + (added ? " was added to" : " was removed from") + " the watchlist";
+        }
         UserDialog dialog = new UserDialog("Info", message);
         dialog.show();
     }

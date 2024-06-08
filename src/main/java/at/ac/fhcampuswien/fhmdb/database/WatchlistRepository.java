@@ -5,6 +5,7 @@ import at.ac.fhcampuswien.fhmdb.observ.Observable;
 import at.ac.fhcampuswien.fhmdb.observ.Observer;
 import com.j256.ormlite.dao.Dao;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,21 +43,24 @@ public class WatchlistRepository implements Observable {
     }
 
     public synchronized int addToWatchlist(WatchlistMovieEntity movieEntity) throws DataBaseException {
-        System.out.println("addToWatchlist called with movie: " + movieEntity.getApiId()); // Add this line
+        System.out.println("addToWatchlist called with movie: " + movieEntity.getApiId());
         try {
-            long count = watchlistDao.queryBuilder().where().eq("apiId", movieEntity.getApiId()).countOf();
-            if (count == 0) {
+            // Überprüfen, ob der Film bereits in der Watchlist ist
+            boolean isInWatchlist = isMovieInWatchlist(movieEntity.getApiId());
+            if (!isInWatchlist) {
+                // Film zur Watchlist hinzufügen
                 int result = watchlistDao.create(movieEntity);
-                MovieEntity fullMovieEntity = movieDao.queryBuilder().where().eq("apiId", movieEntity.getApiId()).queryForFirst();
-                if (fullMovieEntity != null) {
-                    notifyObservers(MovieEntity.toMovies(List.of(fullMovieEntity)).get(0), true);
+                if (result == 1) {
+                    // Vollständigen Filmeintrag aus der Datenbank abrufen
+                    MovieEntity fullMovieEntity = movieDao.queryBuilder().where().eq("apiId", movieEntity.getApiId()).queryForFirst();
+                    // Observer benachrichtigen, dass ein neuer Film hinzugefügt wurde
+                    notifyObservers(MovieEntity.toMovies(List.of(fullMovieEntity)).get(0), true, false);
                 }
                 return result;
             } else {
+                // Der Film ist bereits in der Watchlist, keine Aktion erforderlich
                 MovieEntity fullMovieEntity = movieDao.queryBuilder().where().eq("apiId", movieEntity.getApiId()).queryForFirst();
-                if (fullMovieEntity != null) {
-                    notifyObservers(MovieEntity.toMovies(List.of(fullMovieEntity)).get(0), false);
-                }
+                notifyObservers(MovieEntity.toMovies(List.of(fullMovieEntity)).get(0), false, true);
                 return 0;
             }
         } catch (Exception e) {
@@ -65,6 +69,14 @@ public class WatchlistRepository implements Observable {
         }
     }
 
+    public boolean isMovieInWatchlist(String apiId) throws DataBaseException {
+        try {
+            long count = watchlistDao.queryBuilder().where().eq("apiId", apiId).countOf();
+            return count > 0;
+        } catch (SQLException e) {
+            throw new DataBaseException("Error while checking if movie is in watchlist");
+        }
+    }
 
     public synchronized int removeFromWatchlist(String apiId) throws DataBaseException {
         try {
@@ -72,7 +84,7 @@ public class WatchlistRepository implements Observable {
             MovieEntity fullMovieEntity = movieDao.queryBuilder().where().eq("apiId", apiId).queryForFirst();
             int result = watchlistDao.delete(watchlistDao.queryBuilder().where().eq("apiId", apiId).query());
             if (result > 0 && movieEntity != null && fullMovieEntity != null) {
-                notifyObservers(MovieEntity.toMovies(List.of(fullMovieEntity)).get(0), false);
+                notifyObservers(MovieEntity.toMovies(List.of(fullMovieEntity)).get(0), false, false);
             }
             return result;
         } catch (Exception e) {
@@ -84,12 +96,7 @@ public class WatchlistRepository implements Observable {
 
     @Override
     public void addObserver(Observer observer) {
-        if (!observers.contains(observer)) {
-            observers.add(observer);
-        }
-    }
-        public List<Observer> getObservers() {
-        return new ArrayList<>(observers);
+        observers.add(observer);
     }
 
     @Override
@@ -97,13 +104,28 @@ public class WatchlistRepository implements Observable {
         observers.remove(observer);
     }
 
+    /*
     @Override
-    public void notifyObservers(Movie movie, boolean added) {
-        System.out.println("Notifying observers about movie: " + movie.getTitle() + " added: " + added);
-        for (Observer observer : observers) {
-            observer.update(movie, added);
-        }
+    public void notifyObserversMovieAdded(Movie movie) {
+
     }
 
+    @Override
+    public void notifyObserversMovieRemoved(Movie movie) {
+
+    }
+
+    @Override
+    public void notifyObserversMovieAlreadyExists(Movie movie) {
+
+    }
+    */
+
+    @Override
+    public void notifyObservers(Movie movie, boolean added, boolean alreadyExist) {
+        for (Observer observer : observers) {
+            observer.update(movie, added, alreadyExist);
+        }
+    }
     //--------------------------------------
 }

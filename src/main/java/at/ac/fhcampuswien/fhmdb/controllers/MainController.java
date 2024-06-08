@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class MainController implements Observer {
+public class MainController {
     @FXML
     public JFXHamburger hamburgerMenu;
 
@@ -122,11 +122,5 @@ public class MainController implements Observer {
     public void navigateToMovielist() {
         setContent(UIComponent.MOVIELIST.path);
     }
-
-
-    @Override
-    public void update(Movie movie, boolean added) {
-
-        }
 
 }

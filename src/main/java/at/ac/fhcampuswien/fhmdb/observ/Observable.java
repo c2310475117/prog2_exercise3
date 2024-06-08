@@ -5,5 +5,12 @@ import at.ac.fhcampuswien.fhmdb.models.Movie;
 public interface Observable {
     void addObserver(Observer observer);
     void removeObserver(Observer observer);
-    void notifyObservers(Movie movie, boolean added);
+
+    /*
+    void notifyObserversMovieAdded(Movie movie);
+    void notifyObserversMovieRemoved(Movie movie);
+    void notifyObserversMovieAlreadyExists(Movie movie);
+    */
+
+    void notifyObservers(Movie movie, boolean added, boolean alreadyexist);
 }

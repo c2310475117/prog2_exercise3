@@ -24,10 +24,6 @@ public class WatchlistController implements Initializable, Observer {
     private MovieRepository movieRepository;
     private WatchlistRepository watchlistRepository;
 
-    private WatchlistController() {
-        // constructor is now private
-    }
-
     public static synchronized WatchlistController getInstance() {
         if (instance == null) {
             instance = new WatchlistController();
@@ -39,6 +35,8 @@ public class WatchlistController implements Initializable, Observer {
 
     protected ObservableList<MovieEntity> observableWatchlist = FXCollections.observableArrayList();
 
+
+
     private final ClickEventHandler onRemoveFromWatchlistClicked = (o) -> {
         if (o instanceof MovieEntity) {
             MovieEntity movieEntity = (MovieEntity) o;
@@ -46,9 +44,13 @@ public class WatchlistController implements Initializable, Observer {
             try {
                 watchlistRepository.removeFromWatchlist(movieEntity.getApiId());
                 observableWatchlist.remove(movieEntity);
+
+                // Convert MovieEntity to Movie before notifying observers
+                // Movie movie = MovieEntity.toMovies(List.of(movieEntity)).get(0);
+                // watchlistRepository.notifyObservers(movie, false, true);
             } catch (DataBaseException e) {
-                UserDialog dialog = new UserDialog("Database Error", "Could not remove movie from watchlist");
-                dialog.show();
+                // UserDialog dialog = new UserDialog("Database Error", "Could not remove movie from watchlist");
+                //dialog.show();
                 e.printStackTrace();
             }
         }
@@ -59,22 +61,16 @@ public class WatchlistController implements Initializable, Observer {
         try {
             movieRepository = MovieRepository.getInstance();
             watchlistRepository = WatchlistRepository.getInstance();
-
-            // Debug log to track observer initialization
-            System.out.println("Initializing WatchlistController");
-
-            if (!watchlistRepository.getObservers().contains(this)) {
-                watchlistRepository.addObserver(this);
-                System.out.println("WatchlistController registered as observer");
-            } else {
-                System.out.println("WatchlistController already registered as observer");
-            }
+            // watchlistRepository.addObserver(this);
 
             List<WatchlistMovieEntity> watchlist = watchlistRepository.getWatchlist();
             List<MovieEntity> movies = new ArrayList<>();
 
-            for (WatchlistMovieEntity movie : watchlist) {
-                movies.add(movieRepository.getMovie(movie.getApiId()));
+            for (WatchlistMovieEntity watchlistMovie : watchlist) {
+                MovieEntity movieEntity = movieRepository.getMovie(watchlistMovie.getApiId());
+                if (movieEntity != null) {
+                    movies.add(movieEntity);
+                }
             }
             observableWatchlist.clear();
             observableWatchlist.addAll(movies);
@@ -82,8 +78,8 @@ public class WatchlistController implements Initializable, Observer {
             watchlistView.setCellFactory(movieListView -> new WatchlistCell(onRemoveFromWatchlistClicked));
 
         } catch (DataBaseException e) {
-            UserDialog dialog = new UserDialog("Database Error", "Could not read movies from DB");
-            dialog.show();
+            // UserDialog dialog = new UserDialog("Database Error", "Could not read movies from DB");
+            // dialog.show();
             e.printStackTrace();
         }
 
@@ -94,7 +90,7 @@ public class WatchlistController implements Initializable, Observer {
         System.out.println("WatchlistController initialized");
     }
 
-
+/*
     @Override
     public void update(Movie movie, boolean added) {
         try {
@@ -111,9 +107,16 @@ public class WatchlistController implements Initializable, Observer {
             e.printStackTrace();
         }
     }
-
-    // Method to unregister observer when the controller is destroyed
-    public void destroy() {
-        watchlistRepository.removeObserver(this);
+*/
+    @Override
+    public void update (Movie movie, boolean added, boolean alreadyExist) {
+        String message;
+    if (alreadyExist) {
+        message = "Movie " + movie.getTitle() + " already exists in the watchlist";
+    } else {
+        message = "Movie " + movie.getTitle() + (added ? " was added to" : " was removed from") + " the watchlist";
+    }
+    UserDialog dialog = new UserDialog("Info", message);
+    dialog.show();
     }
 }
