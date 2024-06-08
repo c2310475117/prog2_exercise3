@@ -20,9 +20,20 @@ import java.util.ResourceBundle;
 
 public class WatchlistController implements Initializable, Observer {
 
+    private static WatchlistController instance;
     private MovieRepository movieRepository;
     private WatchlistRepository watchlistRepository;
 
+    private WatchlistController() {
+        // constructor is now private
+    }
+
+    public static synchronized WatchlistController getInstance() {
+        if (instance == null) {
+            instance = new WatchlistController();
+        }
+        return instance;
+    }
     @FXML
     private JFXListView<MovieEntity> watchlistView;
 
@@ -48,7 +59,16 @@ public class WatchlistController implements Initializable, Observer {
         try {
             movieRepository = MovieRepository.getInstance();
             watchlistRepository = WatchlistRepository.getInstance();
-            watchlistRepository.addObserver(this); // Hier wird der WatchlistController als Observer registriert
+
+            // Debug log to track observer initialization
+            System.out.println("Initializing WatchlistController");
+
+            if (!watchlistRepository.getObservers().contains(this)) {
+                watchlistRepository.addObserver(this);
+                System.out.println("WatchlistController registered as observer");
+            } else {
+                System.out.println("WatchlistController already registered as observer");
+            }
 
             List<WatchlistMovieEntity> watchlist = watchlistRepository.getWatchlist();
             List<MovieEntity> movies = new ArrayList<>();
@@ -56,7 +76,7 @@ public class WatchlistController implements Initializable, Observer {
             for (WatchlistMovieEntity movie : watchlist) {
                 movies.add(movieRepository.getMovie(movie.getApiId()));
             }
-
+            observableWatchlist.clear();
             observableWatchlist.addAll(movies);
             watchlistView.setItems(observableWatchlist);
             watchlistView.setCellFactory(movieListView -> new WatchlistCell(onRemoveFromWatchlistClicked));
@@ -74,6 +94,7 @@ public class WatchlistController implements Initializable, Observer {
         System.out.println("WatchlistController initialized");
     }
 
+
     @Override
     public void update(Movie movie, boolean added) {
         try {
@@ -81,17 +102,18 @@ public class WatchlistController implements Initializable, Observer {
 
             if (added) {
                 observableWatchlist.add(movieEntity);
-                UserDialog dialog = new UserDialog("Info", "Movie " + movie.getTitle() + " was added to the watchlist");
-                dialog.show();
             } else {
                 observableWatchlist.removeIf(m -> m.getApiId().equals(movie.getId()));
-                UserDialog dialog = new UserDialog("Info", "Movie " + movie.getTitle() + " was removed from the watchlist");
-                dialog.show();
             }
         } catch (DataBaseException e) {
             UserDialog dialog = new UserDialog("Database Error", "Could not update watchlist");
             dialog.show();
             e.printStackTrace();
         }
+    }
+
+    // Method to unregister observer when the controller is destroyed
+    public void destroy() {
+        watchlistRepository.removeObserver(this);
     }
 }
