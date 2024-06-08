@@ -23,15 +23,10 @@ public class WatchlistController implements Initializable, Observer {
     private static WatchlistController instance;
     private MovieRepository movieRepository;
     private WatchlistRepository watchlistRepository;
-    private static boolean isRegistered = false;
 
-        public WatchlistController() {
-            if (!isRegistered) {
-                // register as observer
-                // your registration code here
-                isRegistered = true;
-            }
-        }
+    private WatchlistController() {
+        // constructor is now private
+    }
 
     public static synchronized WatchlistController getInstance() {
         if (instance == null) {
@@ -106,16 +101,9 @@ public class WatchlistController implements Initializable, Observer {
             MovieEntity movieEntity = movieRepository.getMovie(movie.getId());
 
             if (added) {
-                if (!observableWatchlist.contains(movieEntity)) {
-                    observableWatchlist.add(movieEntity);
-                    UserDialog dialog = new UserDialog("Info", "Movie " + movie.getTitle() + " was added to the watchlist");
-                    dialog.show();
-                }
+                observableWatchlist.add(movieEntity);
             } else {
-                if (observableWatchlist.removeIf(m -> m.getApiId().equals(movie.getId()))) {
-                    UserDialog dialog = new UserDialog("Info", "Movie " + movie.getTitle() + " was removed from the watchlist");
-                    dialog.show();
-                }
+                observableWatchlist.removeIf(m -> m.getApiId().equals(movie.getId()));
             }
         } catch (DataBaseException e) {
             UserDialog dialog = new UserDialog("Database Error", "Could not update watchlist");
@@ -124,11 +112,8 @@ public class WatchlistController implements Initializable, Observer {
         }
     }
 
-
     // Method to unregister observer when the controller is destroyed
     public void destroy() {
         watchlistRepository.removeObserver(this);
-        System.out.println("WatchlistController unregistered as observer");
     }
-
 }
